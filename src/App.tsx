@@ -2,6 +2,8 @@ import { Route } from "react-router";
 import SignUp from "./components/SignUp";
 import { Layout, Menu } from "antd";
 import Login from "./components/Login";
+import PrivateRoute from "./components/PrivateRoute";
+import Categories from "./components/Categories";
 
 const { Header, Content, Footer } = Layout;
 function App() {
@@ -26,6 +28,7 @@ function App() {
           >
             <Route path="/register" component={SignUp} />
             <Route path="/login" component={Login} />
+            <PrivateRoute path="/categories" component={Categories} />
           </div>
         </Content>
         <Footer style={{ textAlign: "center" }}>
