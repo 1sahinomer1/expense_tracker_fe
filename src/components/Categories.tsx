@@ -1,12 +1,28 @@
-import { Button, Input, Modal, Table, Tag, Select, Form } from "antd";
+import {
+  Button,
+  Input,
+  Modal,
+  Table,
+  Tag,
+  Select,
+  Form,
+  Space,
+  Spin,
+} from "antd";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "../store";
-import { addCategory, getCategories } from "../store/actions/CategoryActions";
+import {
+  addCategory,
+  deleteCategory,
+  getCategories,
+  updateCategory,
+} from "../store/actions/CategoryActions";
 import { Category, CategoryForm } from "../types/category";
 import { SketchPicker } from "react-color";
+import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
-type Mode = "new" | "edit";
+type Mode = "new" | "edit" | "delete";
 
 const emptyForm: CategoryForm = {
   name: "",
@@ -21,7 +37,8 @@ const Categories = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [mode, setMode] = useState<Mode>("new");
   const [form, setForm] = useState<CategoryForm>(emptyForm);
-  console.log({ data, loading, error });
+  const [updateId, setUpdateId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const showModal = (mode: Mode) => {
     setIsModalVisible(true);
@@ -30,16 +47,22 @@ const Categories = () => {
 
   const handleOk = () => {
     //mode değerine göre create or update action creater fonksiyon cagir
-    dispatch(addCategory(form));
+    if (mode === "new") dispatch(addCategory(form));
+    else if (mode === "edit" && typeof updateId === "number")
+      dispatch(updateCategory(form, updateId));
+    else if (mode === "delete" && typeof deleteId === "number")
+      dispatch(deleteCategory(deleteId));
     setIsModalVisible(false);
     setMode("new");
     setForm(emptyForm);
+    setUpdateId(null);
   };
 
   const handleCancel = () => {
     setIsModalVisible(false);
     setMode("new");
     setForm(emptyForm);
+    setUpdateId(null);
   };
 
   const columns = [
@@ -57,36 +80,29 @@ const Categories = () => {
       },
     },
 
-    // {
-    //   title: "Tags",
-    //   key: "tags",
-    //   dataIndex: "tags",
-    //   render: (tags) => (
-    //     <>
-    //       {tags.map((tag) => {
-    //         let color = tag.length > 5 ? "geekblue" : "green";
-    //         if (tag === "loser") {
-    //           color = "volcano";
-    //         }
-    //         return (
-    //           <Tag color={color} key={tag}>
-    //             {tag.toUpperCase()}
-    //           </Tag>
-    //         );
-    //       })}
-    //     </>
-    //   ),
-    // },
-    // {
-    //   title: "Action",
-    //   key: "action",
-    //   render: (text, record) => (
-    //     <Space size="middle">
-    //       <a>Invite {record.name}</a>
-    //       <a>Delete</a>
-    //     </Space>
-    //   ),
-    // },
+    {
+      title: "Action",
+      key: "action",
+      render: (text: string, category: Category) => (
+        <Space size="middle">
+          <EditOutlined
+            style={{ color: "darkblue" }}
+            onClick={() => {
+              showModal("edit");
+              setForm(category);
+              setUpdateId(category.id);
+            }}
+          />
+          <DeleteOutlined
+            style={{ color: "marron" }}
+            onClick={() => {
+              showModal("delete");
+              setDeleteId(category.id);
+            }}
+          />
+        </Space>
+      ),
+    },
   ];
   const dispatch = useDispatch();
   useEffect(() => {
@@ -98,35 +114,48 @@ const Categories = () => {
         New Category
       </Button>
       <Modal
-        title={mode === "new" ? "Create New Category" : "Update Category"}
+        title={
+          mode === "new"
+            ? "Create New Category"
+            : mode === "edit"
+            ? "Update Category"
+            : "Delete Category"
+        }
         visible={isModalVisible}
         onOk={handleOk}
         onCancel={handleCancel}
       >
-        <Form.Item label="Category Name" required>
-          <Input
-            name="name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-        </Form.Item>
-        <Form.Item label="Category Type">
-          <Select
-            defaultValue="expense"
-            onChange={(type) => setForm({ ...form, type })}
-          >
-            <Select.Option value="income">Income</Select.Option>
-            <Select.Option value="expense">Expense</Select.Option>
-          </Select>
-        </Form.Item>
-        <Form.Item label="Color">
-          <SketchPicker
-            color={form.color}
-            onChange={(color) => setForm({ ...form, color: color.hex })}
-          />
-        </Form.Item>
+        {mode === "edit" || mode === "new" ? (
+          <div>
+            <Form.Item label="Category Name" required>
+              <Input
+                name="name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </Form.Item>
+            <Form.Item label="Category Type">
+              <Select
+                defaultValue="expense"
+                value={form.type}
+                onChange={(type) => setForm({ ...form, type })}
+              >
+                <Select.Option value="income">Income</Select.Option>
+                <Select.Option value="expense">Expense</Select.Option>
+              </Select>
+            </Form.Item>
+            <Form.Item label="Color">
+              <SketchPicker
+                color={form.color}
+                onChange={(color) => setForm({ ...form, color: color.hex })}
+              />
+            </Form.Item>
+          </div>
+        ) : mode === "delete" ? (
+          <>are you sure?</>
+        ) : null}
       </Modal>
-      <Table columns={columns} dataSource={data} />
+      <Table loading={loading} columns={columns} dataSource={data} />
     </div>
   );
 };
